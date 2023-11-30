@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #ffc0cb; /* Розовый цвет фона */
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            margin-top: 20px;
+        }
+
+        input[type="file"], textarea {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/index">Лабораторная 3</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Справка
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <a class="dropdown-item" href="/about">О программе</a>
+                            <a class="dropdown-item" href="/home">Des</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <h2>Шифрование</h2>
+    <form action="/home/shifr" method="post" enctype="multipart/form-data">
+        <div class="form-group" id="fileInput">
+            <label for="file">Выберите файл для шифрования</label>
+            <input type="file" name="file" id="file" accept=".txt, .pdf, .doc, .docx">
+        </div>
+        <div class="form-group" id="textInput" style="display: none;">
+            <label for="text">Введите текст для шифрования</label>
+            <textarea name="text" id="text" rows="4"></textarea>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="useText" name="useText">
+            <label class="form-check-label" for="useText">Использовать текст для шифрования вместо файла</label>
+        </div>
+        <br>
+        <input type="submit" value="Загрузить">
+    </form>
+    <h2>Расшифрование</h2>
+    <form action="/home/unshifr" method="post" enctype="multipart/form-data">
+        <div class="form-group" id="fileInput2">
+            <label for="file2">Выберите файл для расшифрования</label>
+            <input type="file" name="file" id="file2" accept=".txt, .pdf, .doc, .docx">
+        </div>
+
+        <br>
+        <input type="submit" value="Загрузить">
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script>
+    document.getElementById('useText').addEventListener('change', function () {
+        var fileInput = document.getElementById('fileInput');
+        var textInput = document.getElementById('textInput');
+
+        if (this.checked) {
+            fileInput.style.display = 'none';
+            textInput.style.display = 'block';
+        } else {
+            fileInput.style.display = 'block';
+            textInput.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
+
+
+

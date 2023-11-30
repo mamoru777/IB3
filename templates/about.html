@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О программе</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #ffc0cb; /* Розовый цвет фона */
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        p {
+            margin-bottom: 16px;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/index">Лабораторная 3</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Справка
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <a class="dropdown-item" href="/about">О программе</a>
+                            <a class="dropdown-item" href="/home">Des</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>О программе</h1>
+        <p>Работа выполнена Сенькиным А.Е. ПИбд-42</p>
+        <p>Группа: ПИбд-42</p>
+        <p>Вариант - 2 (Алгоритм DES в режиме CBC (Cipher Block Chaining) - цепочка блоков).</p>
+        <p>Алгоритм DES (Data Encryption Standard) в режиме CBC (Cipher Block Chaining) - это метод блочного шифрования, который обеспечивает дополнительный уровень безопасности за счет использования вектора инициализации и предварительного XOR-а блоков открытого текста.</p>
+        <p>Основные шаги алгоритма:</p>
+        <p>1. Инициализация:</p>
+        <p> - Выбирается секретный ключ K для DES.</p>
+        <p> - Генерируется случайный вектор инициализации (IV).</p>
+        <p>2. Разделение на блоки:</p>
+        <p> - Открытый текст разбивается на блоки фиксированного размера (обычно 64 бита).</p>
+        <p>3. Шифрование в режиме CBC:</p>
+        <p> - Используется IV для первого блока: CipherText[0] = DES(PlainText[0] XOR IV, K)</p>
+        <p> - Для каждого следующего блока: CipherText[i] = DES(PlainText[i] XOR CipherText[i-1], K)</p>
+        <p> - Получается поток зашифрованных данных.</p>
+        <p>5. Передача или хранение данных:</p>
+        <p> - Зашифрованный текст может быть передан или сохранен.</p>
+        <p>Расшифровка в режиме CBC:</p>
+        <p> - Используется тот же ключ K и тот же IV для инициализации.</p>
+        <p> - Для каждого блока: PlainText[i] = DES^-1(CipherText[i], K) XOR CipherText[i-1]</p>
+        <p> - Получается исходный открытый текст.</p>
+        <p>Режим CBC обеспечивает криптографическую стойкость за счет комбинации ключа, вектора инициализации и предыдущего зашифрованного блока для каждого блока открытого текста, что делает его устойчивым к некоторым типам атак.</p>
+        <p>Возможности для сохранения и выбора обрабатываемого файла:</p>
+        <p> - Пользователь выбирает и загружает файл из системы на сервер либо пишет и загружает на сервер текст</p>
+        <p> - После обработки файла или текста на сервере, то есть после шифрования, текст или файл сохраняется на сервере и пользователь автоматически перенаправляется для скачивания обработанного файла или текста</p>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+</html>
+
