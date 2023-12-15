@@ -2,7 +2,9 @@ package myDes
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
+	"strings"
 )
 
 // MyDES представляет собой алгоритм шифрования/дешифрования DES
@@ -69,10 +71,15 @@ func (d *MyDES) processingEncodeInput(input string) []string {
 	bitString := d.bitEncode(input)
 
 	// Если длина бинарной строки не кратна 64, добавляем нули для выравнивания
-	if len(bitString)%64 != 0 {
+	/*if len(bitString)%64 != 0 {
 		for i := 0; i < 64-len(bitString)%64; i++ {
 			bitString += "0"
 		}
+	}*/
+
+	padding := 64 - len(bitString)%64
+	if padding != 64 {
+		bitString += strings.Repeat("0", padding)
 	}
 
 	// Разбиваем бинарную строку на блоки по 64 бита
@@ -83,31 +90,29 @@ func (d *MyDES) processingEncodeInput(input string) []string {
 }
 
 // processingDecodeInput преобразует входную строку в шестнадцатеричной форме в бинарную и разбивает ее на блоки по 64 бита
-func (d *MyDES) processingDecodeInput(input []byte) []string {
+func (d *MyDES) processingDecodeInput(enter interface{}) []string {
 	result := make([]string, 0)
-	inputList := make([]string, 0)
+	var inputList []string
 
-	// Конвертация каждого байта в шестнадцатеричное представление и добавление в inputList
-	for _, b := range input {
-		inputList = append(inputList, fmt.Sprintf("%02x", b))
+	switch v := enter.(type) {
+	case string:
+		inputList = strings.Split(v, "0x")[1:]
+	case []byte:
+		inputList = strings.Split(string(v), "0x")[1:]
+	default:
+		panic("Unsupported input type")
 	}
 
-	intList := make([]int64, 0)
-
-	// Конвертация шестнадцатеричных строк в целые числа
 	for _, i := range inputList {
-		val, _ := strconv.ParseInt(i, 16, 64)
-		intList = append(intList, val)
-	}
-
-	// Конвертация целых чисел в бинарные строки, добавление в результат и выравнивание до 64 бит
-	for _, i := range intList {
-		binData := strconv.FormatInt(i, 2)
-		for len(binData) < 64 {
-			binData = "0" + binData
+		decoded, err := strconv.ParseUint(i, 16, 64)
+		if err != nil {
+			panic(err)
 		}
+
+		binData := fmt.Sprintf("%064b", decoded)
 		result = append(result, binData)
 	}
+
 	return result
 }
 
@@ -145,10 +150,10 @@ func (d *MyDES) spinKey(key string) []string {
 	subKeys := make([]string, 16)
 
 	// Выполнение вращения и создание 16 подключей
-	for i := 0; i < 16; i++ {
-		firstAfterSpin := first[spinTable[i]:] + first[:spinTable[i]]
-		secondAfterSpin := second[spinTable[i]:] + second[:spinTable[i]]
-		subKeys[i] = firstAfterSpin + secondAfterSpin
+	for i := 1; i < 17; i++ {
+		firstAfterSpin := first[spinTable[i-1]:] + first[:spinTable[i-1]]
+		secondAfterSpin := second[spinTable[i-1]:] + second[:spinTable[i-1]]
+		subKeys[i-1] = firstAfterSpin + secondAfterSpin
 	}
 	return subKeys
 }
@@ -386,6 +391,7 @@ func (d *MyDES) iteration(block string, key string, isDecode bool) string {
 	}
 
 	// Сцепляем правую и левую половины блока и возвращаем результат
+	//block = block[len(block)-32:] + block[:32]
 	return block[32:] + block[:32]
 }
 
@@ -415,8 +421,9 @@ func (d *MyDES) Encode(input string, key string) string {
 		blockResult = d.endReplaceBlock(blockResult)
 
 		// Преобразуем результат в шестнадцатеричную форму и добавляем к общему результату
-		result += fmt.Sprintf("%x", blockResult)
-
+		hexValue, err := binaryToHex(blockResult)
+		fmt.Println("16 форма - ", hexValue, err)
+		result += hexValue
 		// Обновляем предыдущий блок для следующей итерации
 		previousBlock = blockResult
 	}
@@ -460,4 +467,15 @@ func (d *MyDES) Decode(cipherText []byte, key string) string {
 
 	// Преобразуем конечный результат в строку
 	return d.bitDecode(result)
+}
+
+func binaryToHex(binaryStr string) (string, error) {
+	decimalValue := new(big.Int)
+	decimalValue, success := decimalValue.SetString(binaryStr, 2)
+	if !success {
+		return "", fmt.Errorf("невозможно преобразовать в десятичное число")
+	}
+
+	hexValue := fmt.Sprintf("0x%X", decimalValue)
+	return hexValue, nil
 }

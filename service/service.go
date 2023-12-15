@@ -61,8 +61,8 @@ func (s *Service) Decode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading file", http.StatusInternalServerError)
 		return
 	}
-	text := des.Decode(fileBytes, "key")
-	processedFileName := handler.Filename + "_decode"
+	text := des.Decode(fileBytes, "Super_Secret_key")
+	processedFileName := "decode_" + handler.Filename
 
 	// Создание пути для сохранения обработанного файла
 	processedFilePath := filepath.Join(".", "processed_files", processedFileName)
@@ -83,6 +83,7 @@ func (s *Service) Decode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error saving processed file", http.StatusInternalServerError)
 		return
 	}
+	//processedFile.Write([]byte(text))
 	processedFile.Write([]byte(text))
 	defer processedFile.Close()
 
@@ -100,9 +101,9 @@ func (s *Service) Encode(w http.ResponseWriter, r *http.Request) {
 	// Если текст передан в запросе
 	if text != "" {
 		log.Println(text)
-		shifrText = des.Encode(text, "key")
+		shifrText = des.Encode(text, "Super_Secret_key")
 		log.Println("Зашифрованный текст", shifrText)
-		processedFileName = text + ".txt_encode"
+		processedFileName = "encode_" + text + ".txt"
 
 	} else {
 		// Если файл передан в запросе
@@ -120,8 +121,9 @@ func (s *Service) Encode(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error reading file", http.StatusInternalServerError)
 			return
 		}
+		text = string(fileBytes)
 		shifrText = des.Encode(string(fileBytes), "key")
-		processedFileName = handler.Filename + "_encode"
+		processedFileName = "encode_" + handler.Filename
 	}
 
 	processedFilePath := filepath.Join(".", "processed_files", processedFileName)
