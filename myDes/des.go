@@ -7,11 +7,11 @@ import (
 
 // MyDES представляет собой алгоритм шифрования/дешифрования DES
 type MyDES struct {
-	childKeys []string
-	iv        string
+	childKeys []string // Массив для хранения подключей
+	iv        string   // Вектор инициализации
 }
 
-// NewMyDES инициализирует новый экземпляр MyDES
+// NewMyDES инициализирует новый экземпляр MyDES с заданным вектором инициализации
 func NewMyDES(iv string) *MyDES {
 	return &MyDES{
 		iv: iv,
@@ -22,6 +22,7 @@ func NewMyDES(iv string) *MyDES {
 func (d *MyDES) bitEncode(s string) string {
 	binStr := ""
 	for _, c := range []byte(s) {
+		// Преобразование каждого символа в 8-битное бинарное представление и добавление к binStr
 		binStr += fmt.Sprintf("%08b", c)
 	}
 	return binStr
@@ -31,6 +32,7 @@ func (d *MyDES) bitEncode(s string) string {
 func (d *MyDES) bitDecode(s []string) string {
 	decoded := ""
 	for _, binStr := range s {
+		// Преобразование каждой бинарной строки в целое число и далее в символ
 		val, _ := strconv.ParseInt(binStr, 2, 64)
 		decoded += string(val)
 	}
@@ -41,6 +43,7 @@ func (d *MyDES) bitDecode(s []string) string {
 func (d *MyDES) negate(s string) string {
 	result := ""
 	for _, i := range s {
+		// Инверсия каждого бита в бинарной строке
 		if i == '1' {
 			result += "0"
 		} else {
@@ -54,6 +57,7 @@ func (d *MyDES) negate(s string) string {
 func (d *MyDES) replaceBlock(block string, replaceTable []int) string {
 	result := ""
 	for _, i := range replaceTable {
+		// Замена битов в блоке согласно указанным позициям в таблице замены
 		result += string(block[i-1])
 	}
 	return result
@@ -63,12 +67,15 @@ func (d *MyDES) replaceBlock(block string, replaceTable []int) string {
 func (d *MyDES) processingEncodeInput(input string) []string {
 	result := make([]string, 0)
 	bitString := d.bitEncode(input)
-	// Если длина не кратна 64, добавляем нули
+
+	// Если длина бинарной строки не кратна 64, добавляем нули для выравнивания
 	if len(bitString)%64 != 0 {
 		for i := 0; i < 64-len(bitString)%64; i++ {
 			bitString += "0"
 		}
 	}
+
+	// Разбиваем бинарную строку на блоки по 64 бита
 	for i := 0; i < len(bitString)/64; i++ {
 		result = append(result, bitString[i*64:i*64+64])
 	}
@@ -79,14 +86,21 @@ func (d *MyDES) processingEncodeInput(input string) []string {
 func (d *MyDES) processingDecodeInput(input []byte) []string {
 	result := make([]string, 0)
 	inputList := make([]string, 0)
+
+	// Конвертация каждого байта в шестнадцатеричное представление и добавление в inputList
 	for _, b := range input {
 		inputList = append(inputList, fmt.Sprintf("%02x", b))
 	}
+
 	intList := make([]int64, 0)
+
+	// Конвертация шестнадцатеричных строк в целые числа
 	for _, i := range inputList {
 		val, _ := strconv.ParseInt(i, 16, 64)
 		intList = append(intList, val)
 	}
+
+	// Конвертация целых чисел в бинарные строки, добавление в результат и выравнивание до 64 бит
 	for _, i := range intList {
 		binData := strconv.FormatInt(i, 2)
 		for len(binData) < 64 {
@@ -99,26 +113,38 @@ func (d *MyDES) processingDecodeInput(input []byte) []string {
 
 // keyConversion преобразует исходный 64-битный ключ в 56-битный ключ и выполняет замену
 func (d *MyDES) keyConversion(key string) string {
+	// Преобразование ключа в бинарную строку
 	key = d.bitEncode(key)
+
+	// Добавление нулей до достижения 64 бит
 	for len(key) < 64 {
 		key += "0"
 	}
 	firstKey := key[:64]
+
+	// Таблица для замены битов в ключе
 	keyReplaceTable := []int{
 		57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18,
 		10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36,
 		63, 55, 47, 39, 31, 23, 15, 7, 62, 54, 46, 38, 30, 22,
 		14, 6, 61, 53, 45, 37, 29, 21, 13, 5, 28, 20, 12, 4,
 	}
+
+	// Замена битов в ключе согласно таблице
 	return d.replaceBlock(firstKey, keyReplaceTable)
 }
 
 // spinKey выполняет вращение для генерации подключей
 func (d *MyDES) spinKey(key string) []string {
+	// Получение 56-битного ключа после замены
 	kc := d.keyConversion(key)
 	first, second := kc[:28], kc[28:]
+
+	// Таблица для вращения ключа
 	spinTable := []int{1, 2, 4, 6, 8, 10, 12, 14, 15, 17, 19, 21, 23, 25, 27, 28}
 	subKeys := make([]string, 16)
+
+	// Выполнение вращения и создание 16 подключей
 	for i := 0; i < 16; i++ {
 		firstAfterSpin := first[spinTable[i]:] + first[:spinTable[i]]
 		secondAfterSpin := second[spinTable[i]:] + second[:spinTable[i]]
@@ -129,14 +155,21 @@ func (d *MyDES) spinKey(key string) []string {
 
 // keySelectionReplacement получает подключ в 48 бит путем выборочной перестановки
 func (d *MyDES) keySelectionReplacement(key string) {
+	// Обнуление массива подключей
 	d.childKeys = nil
+
+	// Таблица для выборочной перестановки битов в подключе
 	keySelectTable := []int{
 		14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10,
 		23, 19, 12, 4, 26, 8, 16, 7, 27, 20, 13, 2,
 		41, 52, 31, 37, 47, 55, 30, 40, 51, 45, 33, 48,
 		44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32,
 	}
+
+	// Генерация подключей
 	subKeys := d.spinKey(key)
+
+	// Добавление подключей после выборочной перестановки
 	for _, childKey56 := range subKeys {
 		d.childKeys = append(d.childKeys, d.replaceBlock(childKey56, keySelectTable))
 	}
@@ -144,6 +177,7 @@ func (d *MyDES) keySelectionReplacement(key string) {
 
 // initReplaceBlock выполняет начальную блочную перестановку
 func (d *MyDES) initReplaceBlock(block string) string {
+	// Таблица для начальной блочной перестановки
 	replaceTable := []int{
 		58, 50, 42, 34, 26, 18, 10, 2,
 		60, 52, 44, 36, 28, 20, 12, 4,
@@ -154,11 +188,14 @@ func (d *MyDES) initReplaceBlock(block string) string {
 		61, 53, 45, 37, 29, 21, 13, 5,
 		63, 55, 47, 39, 31, 23, 15, 7,
 	}
+
+	// Выполнение блочной перестановки
 	return d.replaceBlock(block, replaceTable)
 }
 
 // endReplaceBlock выполняет конечную блочную перестановку
 func (d *MyDES) endReplaceBlock(block string) string {
+	// Таблица для конечной блочной перестановки
 	replaceTable := []int{
 		40, 8, 48, 16, 56, 24, 64, 32,
 		39, 7, 47, 15, 55, 23, 63, 31,
@@ -169,13 +206,15 @@ func (d *MyDES) endReplaceBlock(block string) string {
 		34, 2, 42, 10, 50, 18, 58, 26,
 		33, 1, 41, 9, 49, 17, 57, 25,
 	}
+
+	// Выполнение блочной перестановки
 	return d.replaceBlock(block, replaceTable)
 }
 
 // blockExtend расширяет блок с использованием расширения
 func (d *MyDES) blockExtend(block string) string {
-	extendedBlock := ""
-	extendTable := []int{
+	extendedBlock := ""   // Инициализируем пустую строку, в которую будем добавлять расширенные биты блока
+	extendTable := []int{ // Таблица расширения, определяющая порядок выбора битов из блока
 		32, 1, 2, 3, 4, 5,
 		4, 5, 6, 7, 8, 9,
 		8, 9, 10, 11, 12, 13,
@@ -185,16 +224,21 @@ func (d *MyDES) blockExtend(block string) string {
 		24, 25, 26, 27, 28, 29,
 		28, 29, 30, 31, 32, 1,
 	}
+
+	// Проходим по каждому индексу в таблице и добавляем соответствующий бит из блока в расширенный блок
 	for _, i := range extendTable {
 		extendedBlock += string(block[i-1])
 	}
-	return extendedBlock
+
+	return extendedBlock // Возвращаем расширенный блок
 }
 
 // notOr выполняет операцию XOR двух бинарных строк (01)
 func (d *MyDES) notOr(a, b string) string {
-	size := len(a)
-	result := ""
+	size := len(a) // Получаем длину одной из строк, предполагая, что длины обеих строк равны
+	result := ""   // Инициализируем строку для хранения результата XOR
+
+	// Проходим по каждому биту в строках и выполняем XOR, добавляя результат в строку результата
 	for i := 0; i < size; i++ {
 		if a[i] == b[i] {
 			result += "0"
@@ -202,48 +246,81 @@ func (d *MyDES) notOr(a, b string) string {
 			result += "1"
 		}
 	}
-	return result
+
+	return result // Возвращаем результат операции XOR
 }
 
 // sBoxReplace выполняет подстановку S-Box, преобразуя входные 48 бит в выходные 32 бита
-func (d *MyDES) sBoxReplace(block48 string, num int) string {
-	// Таблицы замены S-Box для DES
-	sBoxTable := [][][]int{
-		// 8 S-Box'ов, каждый со 4 строками и 16 столбцами
+func (d *MyDES) sBoxReplace(block48 string) string {
+	// Таблица S-Box, представленная как двумерный массив
+	sBoxTable := [8][4][16]int{
 		{
 			{14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7},
-			// ... (другие строки для первого S-Box'а)
+			{0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8},
+			{4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0},
+			{15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13},
 		},
-		// ... (другие S-Box'ы)
+		{
+			{15, 1, 8, 14, 6, 11, 3, 4, 9, 7, 2, 13, 12, 0, 5, 10},
+			{3, 13, 4, 7, 15, 2, 8, 14, 12, 0, 1, 10, 6, 9, 11, 5},
+			{0, 14, 7, 11, 10, 4, 13, 1, 5, 8, 12, 6, 9, 3, 2, 15},
+			{13, 8, 10, 1, 3, 15, 4, 2, 11, 6, 7, 12, 0, 5, 14, 9},
+		},
+		{
+			{10, 0, 9, 14, 6, 3, 15, 5, 1, 13, 12, 7, 11, 4, 2, 8},
+			{13, 7, 0, 9, 3, 4, 6, 10, 2, 8, 5, 14, 12, 11, 15, 1},
+			{13, 6, 4, 9, 8, 15, 3, 0, 11, 1, 2, 12, 5, 10, 14, 7},
+			{1, 10, 13, 0, 6, 9, 8, 7, 4, 15, 14, 3, 11, 5, 2, 12},
+		},
+		{
+			{7, 13, 14, 3, 0, 6, 9, 10, 1, 2, 8, 5, 11, 12, 4, 15},
+			{13, 8, 11, 5, 6, 15, 0, 3, 4, 7, 2, 12, 1, 10, 14, 9},
+			{10, 6, 9, 0, 12, 11, 7, 13, 15, 1, 3, 14, 5, 2, 8, 4},
+			{3, 15, 0, 6, 10, 1, 13, 8, 9, 4, 5, 11, 12, 7, 2, 14},
+		},
+		{
+			{2, 12, 4, 1, 7, 10, 11, 6, 8, 5, 3, 15, 13, 0, 14, 9},
+			{14, 11, 2, 12, 4, 7, 13, 1, 5, 0, 15, 10, 3, 9, 8, 6},
+			{4, 2, 1, 11, 10, 13, 7, 8, 15, 9, 12, 5, 6, 3, 0, 14},
+			{11, 8, 12, 7, 1, 14, 2, 13, 6, 15, 0, 9, 10, 4, 5, 3},
+		},
+		{
+			{12, 1, 10, 15, 9, 2, 6, 8, 0, 13, 3, 4, 14, 7, 5, 11},
+			{10, 15, 4, 2, 7, 12, 9, 5, 6, 1, 13, 14, 0, 11, 3, 8},
+			{9, 14, 15, 5, 2, 8, 12, 3, 7, 0, 4, 10, 1, 13, 11, 6},
+			{4, 3, 2, 12, 9, 5, 15, 10, 11, 14, 1, 7, 6, 0, 8, 13},
+		},
+		{
+			{4, 11, 2, 14, 15, 0, 8, 13, 3, 12, 9, 7, 5, 10, 6, 1},
+			{13, 0, 11, 7, 4, 9, 1, 10, 14, 3, 5, 12, 2, 15, 8, 6},
+			{1, 4, 11, 13, 12, 3, 7, 14, 10, 15, 6, 8, 0, 5, 9, 2},
+			{6, 11, 13, 8, 1, 4, 10, 7, 9, 5, 0, 15, 14, 2, 3, 12},
+		},
+		{
+			{13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14, 5, 0, 12, 7},
+			{1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2},
+			{7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8},
+			{2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11},
+		},
 	}
 
-	// Результирующий 32-битный блок после подстановки S-Box
-	result := ""
-
-	// Итерируем по 8 S-Box'ам
+	result := "" // Инициализируем строку для хранения результата замены S-Box
 	for i := 0; i < 8; i++ {
-		// Извлекаем соответствующие биты для выбора строки и столбца
+		// Получаем биты строки и столбца для текущего блока 6 бит
 		rowBit := string([]byte{block48[i*6], block48[i*6+5]})
 		lineBit := block48[i*6+1 : i*6+5]
 
-		// Преобразуем двоичные биты строки и столбца в десятичные
+		// Преобразуем строку и столбец в целочисленные значения
 		row, _ := strconv.ParseInt(rowBit, 2, 64)
 		line, _ := strconv.ParseInt(lineBit, 2, 64)
 
-		// Получаем значение из таблицы S-Box
+		// Получаем значение из таблицы S-Box и преобразуем его в бинарную строку
 		data := sBoxTable[i][row][line]
-
-		// Преобразуем результат в двоичную форму и убеждаемся, что она состоит из 4 бит
-		noFull := strconv.FormatInt(int64(data), 2)
-		for len(noFull) < 4 {
-			noFull = "0" + noFull
-		}
-
-		// Добавляем 4-битный результат к общему результату
+		noFull := fmt.Sprintf("%04b", data)
 		result += noFull
 	}
 
-	return result
+	return result // Возвращаем результат замены S-Box
 }
 
 // sBoxCompression выполняет компрессию блока S-Box для 48-битного блока согласно таблице компрессии S-Box
@@ -252,7 +329,7 @@ func (d *MyDES) sBoxCompression(num int, block48 string) string {
 	resultNotOr := d.notOr(block48, d.childKeys[num])
 
 	// Выполняем подстановку S-Box, используя полученный результат
-	return d.sBoxReplace(resultNotOr, num)
+	return d.sBoxReplace(resultNotOr)
 }
 
 // pBoxReplacement заменяет 32-битный блок с использованием таблицы замены P-Box

@@ -2,6 +2,7 @@ package service
 
 import (
 	"IB3/myDes"
+	"encoding/hex"
 	"github.com/gorilla/mux"
 	"io"
 	"log"
@@ -26,8 +27,8 @@ func (s *Service) GetHandler() http.Handler {
 	// Определяем обработчики для различных эндпоинтов
 	router.HandleFunc("/home", s.Home).Methods(http.MethodGet)
 	router.HandleFunc("/about", s.About).Methods(http.MethodGet)
-	router.HandleFunc("/home/shifr", s.Decode).Methods(http.MethodPost)
-	router.HandleFunc("/home/unshifr", s.Encode).Methods(http.MethodPost)
+	router.HandleFunc("/home/shifr", s.Encode).Methods(http.MethodPost)
+	router.HandleFunc("/home/unshifr", s.Decode).Methods(http.MethodPost)
 	router.HandleFunc("/home/download", s.Download).Methods(http.MethodGet)
 
 	// Возвращаем роутер в качестве обработчика запросов
@@ -46,36 +47,22 @@ func (s *Service) About(w http.ResponseWriter, r *http.Request) {
 
 // Decode обрабатывает запрос на дешифрацию текста или файла с использованием DES
 func (s *Service) Decode(w http.ResponseWriter, r *http.Request) {
-	var processedFileName string
-	var shifrText string
+
 	des := myDes.NewMyDES("01234567")
-	text := r.FormValue("text")
-
-	// Если текст передан в запросе
-	if text != "" {
-		log.Println(text)
-		shifrText = des.Encode(text, "key")
-		processedFileName = text + ".txt_decode"
-
-	} else {
-		// Если файл передан в запросе
-		file, handler, err := r.FormFile("file")
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "Error uploading file", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
-
-		// Чтение данных файла
-		fileBytes, err := io.ReadAll(file)
-		if err != nil {
-			http.Error(w, "Error reading file", http.StatusInternalServerError)
-			return
-		}
-		shifrText = des.Encode(string(fileBytes), "key")
-		processedFileName = handler.Filename + "_decode"
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error uploading file", http.StatusBadRequest)
+		return
 	}
+	defer file.Close()
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Error reading file", http.StatusInternalServerError)
+		return
+	}
+	text := des.Decode(fileBytes, "key")
+	processedFileName := handler.Filename + "_decode"
 
 	// Создание пути для сохранения обработанного файла
 	processedFilePath := filepath.Join(".", "processed_files", processedFileName)
@@ -96,7 +83,7 @@ func (s *Service) Decode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error saving processed file", http.StatusInternalServerError)
 		return
 	}
-	processedFile.Write([]byte(shifrText))
+	processedFile.Write([]byte(text))
 	defer processedFile.Close()
 
 	// Перенаправление на страницу скачивания
@@ -105,21 +92,38 @@ func (s *Service) Decode(w http.ResponseWriter, r *http.Request) {
 
 // Encode обрабатывает запрос на шифрацию файла с использованием DES
 func (s *Service) Encode(w http.ResponseWriter, r *http.Request) {
+	var processedFileName string
+	var shifrText string
 	des := myDes.NewMyDES("01234567")
-	file, handler, err := r.FormFile("file")
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Error uploading file", http.StatusBadRequest)
-		return
+	text := r.FormValue("text")
+
+	// Если текст передан в запросе
+	if text != "" {
+		log.Println(text)
+		shifrText = des.Encode(text, "key")
+		log.Println("Зашифрованный текст", shifrText)
+		processedFileName = text + ".txt_encode"
+
+	} else {
+		// Если файл передан в запросе
+		file, handler, err := r.FormFile("file")
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Error uploading file", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		// Чтение данных файла
+		fileBytes, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Error reading file", http.StatusInternalServerError)
+			return
+		}
+		shifrText = des.Encode(string(fileBytes), "key")
+		processedFileName = handler.Filename + "_encode"
 	}
-	defer file.Close()
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		http.Error(w, "Error reading file", http.StatusInternalServerError)
-		return
-	}
-	text := des.Decode(fileBytes, "key")
-	processedFileName := handler.Filename + "_encode"
+
 	processedFilePath := filepath.Join(".", "processed_files", processedFileName)
 
 	// Создание директории, если её нет
@@ -138,7 +142,9 @@ func (s *Service) Encode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error saving processed file", http.StatusInternalServerError)
 		return
 	}
-	processedFile.Write([]byte(text))
+	hexResult := hex.EncodeToString([]byte(shifrText))
+	log.Print(hexResult)
+	processedFile.Write([]byte(shifrText))
 	defer processedFile.Close()
 
 	// Перенаправление на страницу скачивания
